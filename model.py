@@ -88,6 +88,7 @@ def get_feature(model, style_paths, content_path):
         print(np.array(style_feature_outputs).shape)
         artist_style_feature_outputs.append(style_feature_outputs)
     content_feature_outputs = model(content)
+    print(np.array(content_feature_outputs).shape)
     
     style_feature_arr, content_feature_arr = [], []
 
