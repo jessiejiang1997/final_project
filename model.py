@@ -160,6 +160,8 @@ def run(content_path,style_path,iteration):
         layer.trainable = False
     
     style_features, content_features = get_feature(model, style_path, content_path)
+    print(np.array(style_features).shape)
+    print(np.array(content_features).shape)
     
     init_image = image.pre_process_img(content_path) # initialize the generated image with content image
     init_image = tf.Variable(init_image,dtype = tf.float32)
@@ -175,8 +177,6 @@ def run(content_path,style_path,iteration):
         'content_features':content_features,
         'style_features':style_features
     }
-    print(style_features.shape)
-    print(content_features.shape)
     #我不太知道这个norm means是怎么来的，image.py里用的也是相同的值，norm means是用来normalize图片的，我看几个github版本用的数值都差不多，但不知道怎么算的
     norm_means = np.array([103.939, 116.779, 123.68])
     min_vals = -norm_means
