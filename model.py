@@ -15,6 +15,7 @@ style_layers = ['block1_conv1',
                 'block4_conv1',
                 'block5_conv1'
                 ]
+content_layers = style_layers
 num_content_layers = len(content_layers)
 num_style_layers = len(style_layers)
 
@@ -46,6 +47,9 @@ def model_init():
 
 def content_loss(base_content,target):
     c_loss = tf.reduce_mean(tf.square(base_content - target))/2
+    base_content = tf.convert_to_tensor(base_content)
+    h,w,c = base_content.get_shape().as_list()
+    c_loss = c_loss/(h*w*c)
     return c_loss
 
 def gram_matrix(input_tensor):
@@ -57,8 +61,8 @@ def gram_matrix(input_tensor):
 def style_loss(base_style,target):
     a = gram_matrix(base_style)
     b = gram_matrix(target)
-    h,w,c = base_style.get_shape().as_list()
-    s_loss = tf.reduce_mean(tf.square(a - b))/(4*(h**2)*(w**2)*(c**2))
+    c = base_style.get_shape().as_list()[2]
+    s_loss = tf.reduce_mean(tf.square(a - b))/(2*(c**2))
     return s_loss
 
 
@@ -90,7 +94,7 @@ def get_feature(model, style_paths, content_path):
     content_feature_outputs = model(content)
     print(np.array(content_feature_outputs).shape)
     
-    artist_style_feature_arr, content_feature_arr = [], []
+    artist_style_feature_arr, artist_content_feature_arr = [], []
 
     for image_style_feature_outputs in artist_style_feature_outputs:
         style_feature_arr = []
@@ -98,8 +102,17 @@ def get_feature(model, style_paths, content_path):
             style_feature_arr.append(feature[0])
         artist_style_feature_arr.append(style_feature_arr)
     
+    content_feature_arr = []
     for feature in content_feature_outputs[:num_content_layers]:
         content_feature_arr.append(feature[0])
+    
+    for style_feature_arr in artist_style_feature_arr:
+        new_content_feature_arr = []
+        for i in range(num_content_layers):
+            gain_map = style_feature_arr[i]/np.add(content_feature_arr[i] , 10**(-4))
+            gain_map = np.clip(gain_map, 0.7, 5)
+            new_content_feature_arr.append(np.multiply(content_feature_arr[i], gain_map))
+        artist_content_feature_arr.append(new_content_feature_arr)
     
     # img = image.pre_process_img(path)
     # feature_outputs = model(img)
@@ -113,10 +126,10 @@ def get_feature(model, style_paths, content_path):
     #     for feature in feature_outputs[:num_content_layers]:
     #         feature_arr.append(feature[0])
 
-    return (artist_style_feature_arr, content_feature_arr)
+    return (artist_style_feature_arr, artist_content_feature_arr)
     
 
-def loss(model,loss_weights,init_image,content_features,artist_style_features):
+def loss(model,loss_weights,init_image,artist_content_features,artist_style_features):
 
     style_weight,content_weight = loss_weights
     
@@ -131,18 +144,32 @@ def loss(model,loss_weights,init_image,content_features,artist_style_features):
     total_style_loss = 0
     total_content_loss = 0
 
-    style_layer_weight = 1.0/ float(num_style_layers)
+    init_style_layer_weight = 1.0/ float(num_style_layers)
+    style_layer_weight = init_style_layer_weight
     style_painting_weight = 1.0/ float(len(artist_style_features))
     for style_features in artist_style_features:
         tmp_style_loss = 0
-        for i in range(len(style_features)): 
+        for i in range(len(style_features)):
+            if i == 2 or i == 3:
+                style_layer_weight = 0.5
+            else:
+                style_layer_weight = init_style_layer_weight
             tmp_style_loss = tmp_style_loss + style_layer_weight * style_loss(style_features[i], gen_style_feature[i])
         total_style_loss += style_painting_weight * tmp_style_loss
     
 
-    content_layer_weight = 1.0/ float(num_content_layers)
-    for i in range(len(content_features)): 
-        total_content_loss = total_content_loss + content_layer_weight * content_loss(content_features[i], gen_content_feature[i])
+    init_content_layer_weight = 1.0/ float(num_content_layers)
+    content_layer_weight = init_content_layer_weight
+    content_painting_weight = 1.0/ float(len(artist_content_features))
+    for content_features in artist_content_features:
+        tmp_content_loss = 0
+        for i in range(len(content_features)):
+            if i == 2 or i == 3:
+                content_layer_weight = 0.5
+            else:
+                content_layer_weight = init_content_layer_weight
+            tmp_content_loss = tmp_content_loss + content_layer_weight * content_loss(content_features[i], gen_content_feature[i])
+        total_content_loss += content_painting_weight * tmp_content_loss
     
     total_style_loss *= style_weight
     total_content_loss *= content_weight
@@ -167,7 +194,7 @@ def run(content_path,style_path,iteration):
     for layer in model.layers:
         layer.trainable = False
     
-    artist_style_features, content_features = get_feature(model, style_path, content_path)
+    artist_style_features, artist_content_features = get_feature(model, style_path, content_path)
     
     init_image = image.pre_process_img(content_path) # initialize the generated image with content image
     init_image = tf.Variable(init_image,dtype = tf.float32)
@@ -180,7 +207,7 @@ def run(content_path,style_path,iteration):
         'model':model,
         'loss_weights':loss_weights,
         'init_image':init_image,
-        'content_features':content_features,
+        'artist_content_features':artist_content_features,
         'artist_style_features':artist_style_features
     }
     #我不太知道这个norm means是怎么来的，image.py里用的也是相同的值，norm means是用来normalize图片的，我看几个github版本用的数值都差不多，但不知道怎么算的
