@@ -62,24 +62,37 @@ def style_loss(base_style,target):
     return s_loss
 
 
-def get_feature(model, style_path, content_path):
+def get_feature(model, style_paths, content_path):
 
-    style = image.pre_process_img(style_path)
+    styles = []
+    for style_path in style_paths:
+        style = image.pre_process_img(style_path)
+        style = np.squeeze(style, axis=0)
+        styles.append(style)
+
     content = image.pre_process_img(content_path)
     # creating new style matrix for color transfer
-    style = np.squeeze(style, axis=0)
     content = np.squeeze(content, axis=0)
-    print("Line 70: style's shape", style.shape)
-    new_style = color_transfer.pixel_transformation('image_analogies', style, content)
-    new_style = np.expand_dims(new_style, axis=0)
-    print("Line 74: new_style's shape", new_style.shape)
+    # print("Line 70: style's shape", style.shape)
+    new_styles = []
+    for style in styles:
+        new_style = color_transfer.pixel_transformation('image_analogies', style, content)
+        new_style = np.expand_dims(new_style, axis=0)
+        new_styles.append(new_style)
+    # print("Line 74: new_style's shape", new_style.shape)
     content = np.expand_dims(content, axis=0)
-    style_feature_outputs = model(new_style)
+
+    artist_style_feature_outputs = []
+    for new_style in new_styles:
+        style_feature_outputs = model(new_style)
+        artist_style_feature_outputs.append(style_feature_outputs)
     content_feature_outputs = model(content)
+    
     style_feature_arr, content_feature_arr = [], []
 
-    for feature in style_feature_outputs[num_content_layers:]:
-        style_feature_arr.append(feature[0])
+    for image_style_feature_outputs in artist_style_feature_outputs:
+        for feature in image_style_feature_outputs[num_content_layers:]:
+            style_feature_arr.append(feature[0])
     
     for feature in content_feature_outputs[:num_content_layers]:
         content_feature_arr.append(feature[0])
