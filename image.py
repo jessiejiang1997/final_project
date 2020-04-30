@@ -17,7 +17,7 @@ def loadimg(path_to_img):
     longer_dim = max(img.size)
     max_dim = 500 # the maximum size of the output image longer size
     scale = max_dim / longer_dim
-    img = img.resize((500,500),Image.ANTIALIAS)
+    img = img.resize((250,250),Image.ANTIALIAS)
     # img = img.resize((round(img.size[0] * scale),round(img.size[1] * scale)),Image.ANTIALIAS)
     img = keras.preprocessing.image.img_to_array(img)
     img = np.expand_dims(img,axis = 0)

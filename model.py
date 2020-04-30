@@ -147,7 +147,7 @@ def loss(model,loss_weights,init_image,artist_content_features,artist_style_feat
     init_style_layer_weight = 1.0/ float(num_style_layers)
     style_layer_weight = init_style_layer_weight
     style_painting_weight = 1.0/ float(len(artist_style_features))
-    print(len(artist_style_features))
+    # print(len(artist_style_features))
     for style_features in artist_style_features:
         tmp_style_loss = 0
         for i in range(len(style_features)):
@@ -162,7 +162,7 @@ def loss(model,loss_weights,init_image,artist_content_features,artist_style_feat
     init_content_layer_weight = 1.0/ float(num_content_layers)
     content_layer_weight = init_content_layer_weight
     content_painting_weight = 1.0/ float(len(artist_content_features))
-    print(len(artist_content_features))
+    # print(len(artist_content_features))
     for content_features in artist_content_features:
         tmp_content_loss = 0
         for i in range(len(content_features)):
@@ -236,14 +236,14 @@ def run(content_path,style_path,iteration):
             best_loss = losss
             best_img = image.deprocess_img(init_image.numpy())
 
-        if i % 100 == 0:
+        if i % 20 == 0:
             end = datetime.now()
             print('[INFO]Iteration: {}'.format(i))
             print('Total loss: {:.4e}, '
                   'style loss: {:.4e}, '
                   'content loss: {:.4e}'
                   .format(losss, style_losss, content_losss))
-            print(f'100 iters takes {end -start}')
+            print(f'20 iters takes {end -start}')
             start = datetime.now()
 
             img = init_image.numpy()
