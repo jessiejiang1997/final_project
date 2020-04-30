@@ -96,28 +96,23 @@ def get_feature(model, style_paths, content_path):
     
     artist_style_feature_arr, artist_content_feature_arr = [], []
 
-    artist_style_feature_arr = artist_style_feature_outputs[:, num_content_layers:, 0]
-    # for image_style_feature_outputs in artist_style_feature_outputs:
-    #     style_feature_arr = []
-    #     for feature in image_style_feature_outputs[num_content_layers:]:
-    #         style_feature_arr.append(feature[0])
-    #     artist_style_feature_arr.append(style_feature_arr)
+    for image_style_feature_outputs in artist_style_feature_outputs:
+        style_feature_arr = []
+        for feature in image_style_feature_outputs[num_content_layers:]:
+            style_feature_arr.append(feature[0])
+        artist_style_feature_arr.append(style_feature_arr)
     
-    content_feature_arr = content_feature_outputs[:num_content_layers, 0]
-    # for feature in content_feature_outputs[:num_content_layers]:
-    #     content_feature_arr.append(feature[0])
+    content_feature_arr = []
+    for feature in content_feature_outputs[:num_content_layers]:
+        content_feature_arr.append(feature[0])
     
     for style_feature_arr in artist_style_feature_arr:
-        # new_content_feature_arr = []
-        gain_maps = style_feature_arr / np.add(content_feature_arr, 10**(-4))
-        gain_maps = np.clip(gain_maps, 0.7, 5)
-        new_content_feature_arr = np.multiply(content_feature_arr, gain_maps)
-        artist_style_feature_arr.append(new_content_feature_arr)
-        # for i in range(num_content_layers):
-        #     gain_map = style_feature_arr[i]/np.add(content_feature_arr[i] , 10**(-4))
-        #     gain_map = np.clip(gain_map, 0.7, 5)
-        #     new_content_feature_arr.append(np.multiply(content_feature_arr[i], gain_map))
-        # artist_content_feature_arr.append(new_content_feature_arr)
+        new_content_feature_arr = []
+        for i in range(num_content_layers):
+            gain_map = style_feature_arr[i]/np.add(content_feature_arr[i] , 10**(-4))
+            gain_map = np.clip(gain_map, 0.7, 5)
+            new_content_feature_arr.append(np.multiply(content_feature_arr[i], gain_map))
+        artist_content_feature_arr.append(new_content_feature_arr)
     
     # img = image.pre_process_img(path)
     # feature_outputs = model(img)
