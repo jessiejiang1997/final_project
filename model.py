@@ -89,10 +89,10 @@ def get_feature(model, style_paths, content_path):
     artist_style_feature_outputs = []
     for new_style in new_styles:
         style_feature_outputs = model(new_style)
-        print(np.array(style_feature_outputs).shape)
+        # print(np.array(style_feature_outputs).shape)
         artist_style_feature_outputs.append(style_feature_outputs)
     content_feature_outputs = model(content)
-    print(np.array(content_feature_outputs).shape)
+    # print(np.array(content_feature_outputs).shape)
     
     artist_style_feature_arr, artist_content_feature_arr = [], []
 
@@ -221,7 +221,7 @@ def run(content_path,style_path,iteration):
     start = datetime.now()
 
     for i in range(iteration):
-        
+        print(i)
         grads, all_loss = compute_grads(cfg)
         losss, content_losss, style_losss = all_loss
         opt.apply_gradients([(grads, init_image)])
